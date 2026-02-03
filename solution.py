@@ -79,8 +79,8 @@ for perm in itertools.permutations(items):
         min_total = total
         best_order = perm
     
-for m in dist:
-     print(m)
+# for m in dist:
+#      print(m)
 
 print("\nOptimal Order:", best_order)
 print("Total Distance:", min_total)
