@@ -1,45 +1,32 @@
-from cmath import inf
 import heapq
-import itertools
 
 W, H = 17, 18
 
-# 0 = free, 1 = obstacle
-grid = [[0]*W for _ in range(H)]
-
-    
+grid = [[0] * W for _ in range(H)]
 for x in range(2, 15, 3):
     for y in range(2, 14):
         grid[y][x] = 1
 
-# Add shelves
-for a in range(2,15):
+for a in range(2, 15):
     grid[8][a] = 0
     grid[16][a] = 1
-    
-start = (0,0) # Starting point 
-items = [(13, 9), (3,10), (10, 3), (6, 6), (6, 15), (15,7), (15,16)] # Items
 
-# visualize items in grid
-for x, y in items:
-    grid[y][x] = 7
-
-for _ in grid:
-    print(_)
 
 def heuristic(a, b):
-    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
 def neighbors(node):
     x, y = node
-    for nx, ny in [(x+1,y),(x-1,y),(x,y+1),(x,y-1)]:
-        if 0 <= nx < W and 0 <= ny < H:
-            if grid[ny][nx] != 1:
-                yield (nx, ny)
+    for nx, ny in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]:
+        if 0 <= nx < W and 0 <= ny < H and grid[ny][nx] != 1:
+            yield (nx, ny)
 
 
-def astar(start, goal):
+def astar(start, goal, grid):
+    W = len(grid[0])
+    H = len(grid)
+
     pq = [(0, start)]
     g = {start: 0}
     parent = {}
@@ -48,39 +35,68 @@ def astar(start, goal):
         _, current = heapq.heappop(pq)
 
         if current == goal:
-            return g[goal]
+            path = []
+            while current in parent:
+                path.append(current)
+                current = parent[current]
+            path.append(start)
+            path.reverse()
+            return path
 
-        for nb in neighbors(current):
-            new_cost = g[current] + 1
-            if nb not in g or new_cost < g[nb]:
-                g[nb] = new_cost
-                f = new_cost + heuristic(nb, goal)
-                heapq.heappush(pq, (f, nb))
-
-    return -1
-
-
-# Distance matrix
-points = [start] + items
-dist = {(a,b): astar(a,b) for a in points for b in points if a != b}
+        x, y = current
+        for nx, ny in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]:
+            if 0 <= nx < W and 0 <= ny < H and grid[ny][nx] != 1:
+                nb = (nx, ny)
+                new_cost = g[current] + 1
+                if nb not in g or new_cost < g[nb]:
+                    g[nb] = new_cost
+                    parent[nb] = current
+                    f = new_cost + heuristic(nb, goal)
+                    heapq.heappush(pq, (f, nb))
+    return None
 
 
-# TSP
-best_order = None
-min_total = float(inf)
+def compute_path(start, items, shelves):
+    W, H = 17, 18
+    grid = [[0] * W for _ in range(H)]
 
-for perm in itertools.permutations(items):
-    total = 0
+    # build shelves
+    for x, y in shelves:
+        if 0 <= x < W and 0 <= y < H:
+            grid[y][x] = 1
+
+    remaining = items.copy()
     curr = start
-    for p in perm:
-        total += dist[(curr, p)]
-        curr = p
-    if total < min_total:
-        min_total = total
-        best_order = perm
-    
-# for m in dist:
-#      print(m)
+    order = []
 
-print("\nOptimal Order:", best_order)
-print("Total Distance:", min_total)
+    while remaining:
+        best = None
+        best_len = float("inf")
+
+        for p in remaining:
+            path = astar(curr, p, grid)
+            if path is None:
+                continue
+            if len(path) < best_len:
+                best = p
+                best_len = len(path)
+
+        if best is None:
+            break
+
+        order.append(best)
+        remaining.remove(best)
+        curr = best
+
+    full = []
+    curr = start
+    for p in order:
+        seg = astar(curr, p, grid)
+        if seg is None:
+            continue
+        if full:
+            seg = seg[1:]
+        full += seg
+        curr = p
+
+    return full
