@@ -45,10 +45,3 @@ pip install flask
 python app.py
 ```
 3. Open http://localhost:5000
-
-4. Mukava päivä!
-
-
-### Contributor
-1. Mira Vorne for giving me the wonderful project.
-2. ChatGPT for FE generated and JS convert from python.
